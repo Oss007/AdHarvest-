@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #4CAF50;
+  --color-accent: #8BC34A;
+  --color-gold: #FFEB3B;
+  --color-burn: #FF5722;
+  
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  html, body {
+    @apply h-full w-full overflow-hidden bg-gray-50;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html[lang="ar"] {
+    direction: rtl;
+  }
+}
+
+@layer components {
+  .farm-grid {
+    @apply grid grid-cols-3 gap-3 p-4 bg-white/50 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20;
+  }
+  
+  .crop-cell {
+    @apply aspect-square flex items-center justify-center text-4xl rounded-2xl transition-all duration-300 cursor-pointer select-none;
+    background: radial-gradient(circle at center, #f0f0f0, #e0e0e0);
+  }
+  
+  .crop-cell:active {
+    @apply scale-95;
+  }
+  
+  .crop-cell.barren {
+    @apply bg-amber-100 border-2 border-amber-200;
+  }
+  
+  .crop-cell.watered {
+    @apply bg-blue-50 border-2 border-blue-200;
+  }
+  
+  .crop-cell.harvested {
+    @apply bg-green-50 border-2 border-green-200 shadow-inner;
+  }
+}
+
+@keyframes coin-pop {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  70% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.animate-coin {
+  animation: coin-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@media (max-width: 400px) {
+  .farm-grid {
+    @apply gap-2 p-3;
+  }
+  .crop-cell {
+    @apply text-3xl;
+  }
+}

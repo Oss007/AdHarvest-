@@ -1,0 +1,5 @@
+{
+  "name": "AdHarvest",
+  "description": "A production-grade Telegram Mini App for farming ADH tokens by watching ads.",
+  "requestFramePermissions": []
+}

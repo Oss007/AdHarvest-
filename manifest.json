@@ -1,0 +1,15 @@
+{
+  "name": "AdHarvest",
+  "short_name": "AdHarvest",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2371/2371831.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
