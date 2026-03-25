@@ -1,26 +1,7 @@
-import { Buffer as BufferLib } from 'buffer';
-import process from 'process';
-
-// Type-safe: Cast globalThis to 'any' for polyfill injection
-const globalAny = globalThis as any;
-
-// Inject Buffer and process only if missing (prevents re-define errors)
-if (!globalAny.Buffer) {
-  globalAny.Buffer = BufferLib;
-}
-
-if (!globalAny.process) {
-  globalAny.process = process;
-}
-
-// Declare global for legacy libs (safe in TypeScript)
-declare global {
-  interface Window {
-    Buffer: typeof BufferLib;
-    process: typeof process;
-    global?: typeof globalThis;
-  }
-}
+/**
+ * Polyfills for the browser environment.
+ * Node.js globals like Buffer and process are handled by vite-plugin-node-polyfills in vite.config.ts.
+ */
 
 // Telegram legacy warnings suppression (safe)
 (function () {
