@@ -9,8 +9,8 @@ if (typeof global === 'undefined') {
   (window as any).global = window;
 }
 
-// Fix for Telegram CloudStorage warning on legacy versions (< 6.9)
-// 1. Suppress the warning message itself across all console methods
+// Fix for Telegram legacy warnings (CloudStorage < 6.9, HapticFeedback < 6.1)
+// 1. Suppress the warning messages across all console methods
 (function() {
   var methods = ['log', 'warn', 'error', 'info'];
   methods.forEach(function(method) {
@@ -18,7 +18,9 @@ if (typeof global === 'undefined') {
     (console as any)[method] = function() {
       if (arguments[0] && typeof arguments[0] === 'string' && 
           (arguments[0].indexOf('CloudStorage is not supported') !== -1 || 
-           arguments[0].indexOf('[Telegram.WebApp] CloudStorage') !== -1)) {
+           arguments[0].indexOf('HapticFeedback is not supported') !== -1 ||
+           arguments[0].indexOf('[Telegram.WebApp] CloudStorage') !== -1 ||
+           arguments[0].indexOf('[Telegram.WebApp] HapticFeedback') !== -1)) {
         return;
       }
       original.apply(console, arguments);
@@ -26,7 +28,7 @@ if (typeof global === 'undefined') {
   });
 })();
 
-// 2. Shadow the property on legacy versions
+// 2. Shadow properties on legacy versions
 (function() {
   const tg = (window as any).Telegram?.WebApp;
   if (tg) {
@@ -36,10 +38,24 @@ if (typeof global === 'undefined') {
       const major = parseInt(parts[0], 10) || 0;
       const minor = parseInt(parts[1], 10) || 0;
       
+      // CloudStorage (6.9+)
       if (major < 6 || (major === 6 && minor < 9)) {
-        // Version is too old for CloudStorage
         Object.defineProperty(tg, 'CloudStorage', {
           value: null,
+          writable: false,
+          configurable: true,
+          enumerable: true
+        });
+      }
+
+      // HapticFeedback (6.1+)
+      if (major < 6 || (major === 6 && minor < 1)) {
+        Object.defineProperty(tg, 'HapticFeedback', {
+          value: {
+            impactOccurred: function() {},
+            notificationOccurred: function() {},
+            selectionChanged: function() {}
+          },
           writable: false,
           configurable: true,
           enumerable: true

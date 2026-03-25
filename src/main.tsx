@@ -20,7 +20,7 @@ tg.onEvent('themeChanged', () => {
 // Haptic feedback on init
 tg.HapticFeedback.impactOccurred('medium');
 
-const manifestUrl = "https://ais-dev-3j3fakgdgxuy7i62sowap5-255228596859.europe-west1.run.app/tonconnect-manifest.json";
+const manifestUrl = `${window.location.origin}/tonconnect-manifest.json`;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

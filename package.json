@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@ton/core": "^0.59.1",
-    "@ton/ton": "14.3.2",
+    "@ton/ton": "^15.1.0",
     "@tonconnect/ui-react": "^2.0.9",
     "buffer": "^6.0.3",
     "canvas-confetti": "^1.9.3",

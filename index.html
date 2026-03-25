@@ -7,8 +7,8 @@
     <title>AdHarvest (ADH)</title>
     <link rel="manifest" href="/manifest.json" />
     <script>
-      // Fix for Telegram CloudStorage warning on legacy versions (< 6.9)
-      // 1. Suppress the warning message itself across all console methods
+      // Fix for Telegram legacy warnings (CloudStorage < 6.9, HapticFeedback < 6.1)
+      // 1. Suppress the warning messages across all console methods
       (function() {
         var methods = ['log', 'warn', 'error', 'info'];
         methods.forEach(function(method) {
@@ -16,7 +16,9 @@
           console[method] = function() {
             if (arguments[0] && typeof arguments[0] === 'string' && 
                 (arguments[0].indexOf('CloudStorage is not supported') !== -1 || 
-                 arguments[0].indexOf('[Telegram.WebApp] CloudStorage') !== -1)) {
+                 arguments[0].indexOf('HapticFeedback is not supported') !== -1 ||
+                 arguments[0].indexOf('[Telegram.WebApp] CloudStorage') !== -1 ||
+                 arguments[0].indexOf('[Telegram.WebApp] HapticFeedback') !== -1)) {
               return;
             }
             original.apply(console, arguments);
@@ -24,18 +26,34 @@
         });
       })();
 
-      // 2. Shadow the property as soon as Telegram is available
+      // 2. Shadow properties as soon as Telegram is available
       (function() {
-        function shadowCloudStorage(tg) {
+        function shadowLegacyFeatures(tg) {
           if (!tg || !tg.WebApp) return;
           try {
             var v = tg.WebApp.version || '0';
             var p = v.split('.');
             var major = parseInt(p[0], 10) || 0;
             var minor = parseInt(p[1], 10) || 0;
+            
+            // CloudStorage (6.9+)
             if (major < 6 || (major === 6 && minor < 9)) {
               Object.defineProperty(tg.WebApp, 'CloudStorage', {
                 value: null,
+                writable: false,
+                configurable: true,
+                enumerable: true
+              });
+            }
+            
+            // HapticFeedback (6.1+)
+            if (major < 6 || (major === 6 && minor < 1)) {
+              Object.defineProperty(tg.WebApp, 'HapticFeedback', {
+                value: {
+                  impactOccurred: function() {},
+                  notificationOccurred: function() {},
+                  selectionChanged: function() {}
+                },
                 writable: false,
                 configurable: true,
                 enumerable: true
@@ -46,7 +64,7 @@
 
         // Handle pre-existing Telegram object
         if (window.Telegram) {
-          shadowCloudStorage(window.Telegram);
+          shadowLegacyFeatures(window.Telegram);
         }
 
         // Intercept future assignments to window.Telegram
@@ -56,7 +74,7 @@
           enumerable: true,
           get: function() { return _telegram; },
           set: function(val) {
-            shadowCloudStorage(val);
+            shadowLegacyFeatures(val);
             _telegram = val;
           }
         });
