@@ -1,4 +1,3 @@
-// src/polyfills.ts
 import { Buffer as BufferLib } from 'buffer';
 import process from 'process';
 
