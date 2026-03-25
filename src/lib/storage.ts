@@ -2,14 +2,22 @@
  * Safe storage utility that handles Telegram CloudStorage with fallback to localStorage.
  */
 
-const tg = window.Telegram.WebApp;
+const getWebApp = () => (window as any).Telegram?.WebApp;
 
 /**
  * Safely checks if a feature is supported by the current Telegram WebApp version.
  */
 const isVersionAtLeast = (version: string): boolean => {
   try {
-    if (!tg || !tg.version) return false;
+    const tg = getWebApp();
+    if (!tg) return false;
+    
+    // Use native method if available (added in 6.0)
+    if (typeof tg.isVersionAtLeast === 'function') {
+      return tg.isVersionAtLeast(version);
+    }
+    
+    if (!tg.version) return false;
     
     const currentParts = tg.version.split('.');
     const targetParts = version.split('.');
@@ -33,8 +41,9 @@ const isVersionAtLeast = (version: string): boolean => {
  */
 const getCloudStorage = () => {
   if (isVersionAtLeast('6.9')) {
+    const tg = getWebApp();
     // Accessing the property only if version check passes
-    return (tg as any).CloudStorage;
+    return tg?.CloudStorage;
   }
   return null;
 };

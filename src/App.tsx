@@ -29,7 +29,7 @@ export default function App() {
   const [tonConnectUI] = useTonConnectUI();
   const userAddress = useTonAddress();
   
-  const userId = window.Telegram.WebApp.initDataUnsafe.user?.id?.toString() || 'DEV_USER_123';
+  const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString() || 'DEV_USER_123';
   
   // States
   const [activeTab, setActiveTab] = useState<Tab>('farm');
@@ -92,7 +92,9 @@ export default function App() {
 
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ msg, type });
-    window.Telegram.WebApp.HapticFeedback.notificationOccurred(type);
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
+    } catch (e) {}
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -141,7 +143,9 @@ export default function App() {
   const handleHarvest = () => {
     setCells(new Array(9).fill('barren'));
     setIsHarvestReady(false);
-    window.Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
+    } catch (e) {}
     showToast("Farm Reset! Ready for more.", 'success');
   };
 

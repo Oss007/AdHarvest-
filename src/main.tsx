@@ -6,19 +6,26 @@ import App from './App';
 import './index.css';
 import './lib/i18n';
 
-// Initialize Telegram WebApp
-const tg = window.Telegram.WebApp;
-tg.ready();
-tg.expand();
+// Initialize Telegram WebApp safely
+const tg = window.Telegram?.WebApp;
 
-// Sync theme
-document.documentElement.className = tg.colorScheme;
-tg.onEvent('themeChanged', () => {
-  document.documentElement.className = tg.colorScheme;
-});
+if (tg) {
+  tg.ready();
+  tg.expand();
 
-// Haptic feedback on init
-tg.HapticFeedback.impactOccurred('medium');
+  // Sync theme
+  document.documentElement.className = tg.colorScheme || 'light';
+  tg.onEvent('themeChanged', () => {
+    document.documentElement.className = tg.colorScheme || 'light';
+  });
+
+  // Haptic feedback on init
+  try {
+    tg.HapticFeedback?.impactOccurred('medium');
+  } catch (e) {
+    // Silently fail
+  }
+}
 
 const manifestUrl = `${window.location.origin}/tonconnect-manifest.json`;
 

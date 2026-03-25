@@ -17,13 +17,17 @@ export const ReferralSystem: React.FC<ReferralSystemProps> = ({ userId, referral
   const handleCopy = () => {
     navigator.clipboard.writeText(refLink);
     setCopied(true);
-    window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+    } catch (e) {}
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleShare = () => {
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent('Join AdHarvest and farm ADH tokens with me! 🌾💰')}`;
-    window.Telegram.WebApp.openTelegramLink(shareUrl);
+    try {
+      window.Telegram?.WebApp?.openTelegramLink(shareUrl);
+    } catch (e) {}
   };
 
   return (

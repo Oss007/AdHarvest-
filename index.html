@@ -7,77 +7,68 @@
     <title>AdHarvest (ADH)</title>
     <link rel="manifest" href="/manifest.json" />
     <script>
-      // Fix for Telegram legacy warnings (CloudStorage < 6.9, HapticFeedback < 6.1)
-      // 1. Suppress the warning messages across all console methods
+      /**
+       * ADH Telegram Polyfill & Warning Suppressor
+       * This script suppresses legacy warnings and provides basic safety.
+       */
       (function() {
-        var methods = ['log', 'warn', 'error', 'info'];
+        // 1. Console Interception
+        var suppressPatterns = [
+          /CloudStorage is not supported/i,
+          /HapticFeedback is not supported/i,
+          /\[Telegram\.WebApp\] CloudStorage/i,
+          /\[Telegram\.WebApp\] HapticFeedback/i,
+          /version 6\.[0-8]/i,
+          /version 6\.0/i,
+          /not supported in version/i,
+          /\[Telegram\.WebApp\]/i
+        ];
+        
+        var methods = ['log', 'warn', 'error', 'info', 'debug'];
+        
         methods.forEach(function(method) {
           var original = console[method];
+          if (typeof original !== 'function') return;
+          
           console[method] = function() {
-            if (arguments[0] && typeof arguments[0] === 'string' && 
-                (arguments[0].indexOf('CloudStorage is not supported') !== -1 || 
-                 arguments[0].indexOf('HapticFeedback is not supported') !== -1 ||
-                 arguments[0].indexOf('[Telegram.WebApp] CloudStorage') !== -1 ||
-                 arguments[0].indexOf('[Telegram.WebApp] HapticFeedback') !== -1)) {
-              return;
+            var args = Array.prototype.slice.call(arguments);
+            var combined = "";
+            try {
+              combined = args.map(function(a) {
+                if (typeof a === 'string') return a;
+                try { return JSON.stringify(a); } catch(e) { return String(a); }
+              }).join(' ');
+            } catch(e) {
+              combined = args.join(' ');
             }
+            
+            for (var i = 0; i < suppressPatterns.length; i++) {
+              if (suppressPatterns[i].test(combined)) return;
+            }
+            
             original.apply(console, arguments);
           };
         });
-      })();
 
-      // 2. Shadow properties as soon as Telegram is available
-      (function() {
-        function shadowLegacyFeatures(tg) {
-          if (!tg || !tg.WebApp) return;
-          try {
-            var v = tg.WebApp.version || '0';
-            var p = v.split('.');
-            var major = parseInt(p[0], 10) || 0;
-            var minor = parseInt(p[1], 10) || 0;
-            
-            // CloudStorage (6.9+)
-            if (major < 6 || (major === 6 && minor < 9)) {
-              Object.defineProperty(tg.WebApp, 'CloudStorage', {
-                value: null,
-                writable: false,
-                configurable: true,
-                enumerable: true
-              });
-            }
-            
-            // HapticFeedback (6.1+)
-            if (major < 6 || (major === 6 && minor < 1)) {
-              Object.defineProperty(tg.WebApp, 'HapticFeedback', {
-                value: {
-                  impactOccurred: function() {},
-                  notificationOccurred: function() {},
-                  selectionChanged: function() {}
-                },
-                writable: false,
-                configurable: true,
-                enumerable: true
-              });
-            }
-          } catch(e) {}
+        // 2. Basic Telegram Mock (if not loaded yet)
+        if (!window.Telegram) {
+          window.Telegram = {};
         }
-
-        // Handle pre-existing Telegram object
-        if (window.Telegram) {
-          shadowLegacyFeatures(window.Telegram);
+        if (!window.Telegram.WebApp) {
+          window.Telegram.WebApp = {
+            ready: function() {},
+            expand: function() {},
+            onEvent: function() {},
+            HapticFeedback: {
+              impactOccurred: function() {},
+              notificationOccurred: function() {},
+              selectionChanged: function() {}
+            },
+            initDataUnsafe: { user: {} },
+            colorScheme: 'light',
+            version: '6.0'
+          };
         }
-
-        // Intercept future assignments to window.Telegram
-        var _telegram = window.Telegram;
-        Object.defineProperty(window, 'Telegram', {
-          configurable: true,
-          enumerable: true,
-          get: function() { return _telegram; },
-          set: function(val) {
-            shadowLegacyFeatures(val);
-            _telegram = val;
-          }
-        });
       })();
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>

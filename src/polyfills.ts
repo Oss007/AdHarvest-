@@ -7,60 +7,65 @@
 (function () {
   if (typeof console === 'undefined') return;
 
-  const methods: ('log' | 'warn' | 'error' | 'info')[] = ['log', 'warn', 'error', 'info'];
+  const methods: ('log' | 'warn' | 'error' | 'info' | 'debug')[] = ['log', 'warn', 'error', 'info', 'debug'];
+  
+  const suppressPatterns = [
+    /CloudStorage is not supported/i,
+    /HapticFeedback is not supported/i,
+    /\[Telegram\.WebApp\] CloudStorage/i,
+    /\[Telegram\.WebApp\] HapticFeedback/i,
+    /version 6\.[0-8]/i,
+    /version 6\.0/i,
+    /not supported in version/i,
+    /\[Telegram\.WebApp\]/i
+  ];
+
+  function shouldSuppress(args: any[]) {
+    let combined = "";
+    try {
+      combined = args.map(a => {
+        if (typeof a === 'string') return a;
+        try { return JSON.stringify(a); } catch(e) { return String(a); }
+      }).join(' ');
+    } catch(e) {
+      combined = args.join(' ');
+    }
+    for (let i = 0; i < suppressPatterns.length; i++) {
+      if (suppressPatterns[i].test(combined)) return true;
+    }
+    return false;
+  }
+
   methods.forEach((method) => {
     const original = console[method];
+    if (typeof original !== 'function') return;
     console[method] = function (...args: any[]) {
-      const msg = args[0];
-      if (typeof msg === 'string') {
-        if (
-          msg.includes('CloudStorage is not supported') ||
-          msg.includes('HapticFeedback is not supported') ||
-          msg.includes('[Telegram.WebApp] CloudStorage') ||
-          msg.includes('[Telegram.WebApp] HapticFeedback')
-        ) {
-          return; // Suppressed
-        }
-      }
+      if (shouldSuppress(args)) return;
       original.apply(console, args);
     };
   });
 })();
 
-// Shadow legacy Telegram properties if version < required
+// Safe Telegram WebApp fallback
 (function () {
-  const tg = (window as any).Telegram?.WebApp;
-  if (!tg) return;
-
-  try {
-    const version = tg.version || '0';
-    const [major = 0, minor = 0] = version.split('.').map(Number);
-
-    // CloudStorage (needs 6.9+)
-    if (major < 6 || (major === 6 && minor < 9)) {
-      Object.defineProperty(tg, 'CloudStorage', {
-        value: null,
-        writable: false,
-        configurable: true,
-        enumerable: true,
-      });
-    }
-
-    // HapticFeedback (needs 6.1+)
-    if (major < 6 || (major === 6 && minor < 1)) {
-      Object.defineProperty(tg, 'HapticFeedback', {
-        value: {
-          impactOccurred: () => {},
-          notificationOccurred: () => {},
-          selectionChanged: () => {},
-        },
-        writable: false,
-        configurable: true,
-        enumerable: true,
-      });
-    }
-  } catch {
-    // Silently fail
+  if (typeof window === 'undefined') return;
+  
+  const win = window as any;
+  if (!win.Telegram) win.Telegram = {};
+  if (!win.Telegram.WebApp) {
+    win.Telegram.WebApp = {
+      ready: () => {},
+      expand: () => {},
+      onEvent: () => {},
+      HapticFeedback: {
+        impactOccurred: () => {},
+        notificationOccurred: () => {},
+        selectionChanged: () => {},
+      },
+      initDataUnsafe: { user: {} },
+      colorScheme: 'light',
+      version: '6.0',
+    };
   }
 })();
 
