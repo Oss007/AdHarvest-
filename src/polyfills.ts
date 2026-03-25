@@ -24,7 +24,7 @@ declare global {
 }
 
 // Telegram legacy warnings suppression (safe)
-(function() {
+(function () {
   if (typeof console === 'undefined') return;
 
   const methods: ('log' | 'warn' | 'error' | 'info')[] = ['log', 'warn', 'error', 'info'];
@@ -48,7 +48,7 @@ declare global {
 })();
 
 // Shadow legacy Telegram properties if version < required
-(function() {
+(function () {
   const tg = (window as any).Telegram?.WebApp;
   if (!tg) return;
 
@@ -62,7 +62,7 @@ declare global {
         value: null,
         writable: false,
         configurable: true,
-        enumerable: true
+        enumerable: true,
       });
     }
 
@@ -72,11 +72,11 @@ declare global {
         value: {
           impactOccurred: () => {},
           notificationOccurred: () => {},
-          selectionChanged: () => {}
+          selectionChanged: () => {},
         },
         writable: false,
         configurable: true,
-        enumerable: true
+        enumerable: true,
       });
     }
   } catch {
