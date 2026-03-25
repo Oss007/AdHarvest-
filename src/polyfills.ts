@@ -1,68 +1,87 @@
-import { Buffer } from 'buffer';
+// src/polyfills.ts
+import { Buffer as BufferLib } from 'buffer';
 import process from 'process';
 
-window.Buffer = Buffer;
-window.process = process;
+// Type-safe: Cast globalThis to 'any' for polyfill injection
+const globalAny = globalThis as any;
 
-// Ensure global is defined for some older libraries
-if (typeof global === 'undefined') {
-  (window as any).global = window;
+// Inject Buffer and process only if missing (prevents re-define errors)
+if (!globalAny.Buffer) {
+  globalAny.Buffer = BufferLib;
 }
 
-// Fix for Telegram legacy warnings (CloudStorage < 6.9, HapticFeedback < 6.1)
-// 1. Suppress the warning messages across all console methods
+if (!globalAny.process) {
+  globalAny.process = process;
+}
+
+// Declare global for legacy libs (safe in TypeScript)
+declare global {
+  interface Window {
+    Buffer: typeof BufferLib;
+    process: typeof process;
+    global?: typeof globalThis;
+  }
+}
+
+// Telegram legacy warnings suppression (safe)
 (function() {
-  var methods = ['log', 'warn', 'error', 'info'];
-  methods.forEach(function(method) {
-    var original = (console as any)[method];
-    (console as any)[method] = function() {
-      if (arguments[0] && typeof arguments[0] === 'string' && 
-          (arguments[0].indexOf('CloudStorage is not supported') !== -1 || 
-           arguments[0].indexOf('HapticFeedback is not supported') !== -1 ||
-           arguments[0].indexOf('[Telegram.WebApp] CloudStorage') !== -1 ||
-           arguments[0].indexOf('[Telegram.WebApp] HapticFeedback') !== -1)) {
-        return;
+  if (typeof console === 'undefined') return;
+
+  const methods: ('log' | 'warn' | 'error' | 'info')[] = ['log', 'warn', 'error', 'info'];
+  methods.forEach((method) => {
+    const original = console[method];
+    console[method] = function (...args: any[]) {
+      const msg = args[0];
+      if (typeof msg === 'string') {
+        if (
+          msg.includes('CloudStorage is not supported') ||
+          msg.includes('HapticFeedback is not supported') ||
+          msg.includes('[Telegram.WebApp] CloudStorage') ||
+          msg.includes('[Telegram.WebApp] HapticFeedback')
+        ) {
+          return; // Suppressed
+        }
       }
-      original.apply(console, arguments);
+      original.apply(console, args);
     };
   });
 })();
 
-// 2. Shadow properties on legacy versions
+// Shadow legacy Telegram properties if version < required
 (function() {
   const tg = (window as any).Telegram?.WebApp;
-  if (tg) {
-    try {
-      const version = tg.version || '0';
-      const parts = version.split('.');
-      const major = parseInt(parts[0], 10) || 0;
-      const minor = parseInt(parts[1], 10) || 0;
-      
-      // CloudStorage (6.9+)
-      if (major < 6 || (major === 6 && minor < 9)) {
-        Object.defineProperty(tg, 'CloudStorage', {
-          value: null,
-          writable: false,
-          configurable: true,
-          enumerable: true
-        });
-      }
+  if (!tg) return;
 
-      // HapticFeedback (6.1+)
-      if (major < 6 || (major === 6 && minor < 1)) {
-        Object.defineProperty(tg, 'HapticFeedback', {
-          value: {
-            impactOccurred: function() {},
-            notificationOccurred: function() {},
-            selectionChanged: function() {}
-          },
-          writable: false,
-          configurable: true,
-          enumerable: true
-        });
-      }
-    } catch (e) {
-      // Silently fail if we can't shadow it
+  try {
+    const version = tg.version || '0';
+    const [major = 0, minor = 0] = version.split('.').map(Number);
+
+    // CloudStorage (needs 6.9+)
+    if (major < 6 || (major === 6 && minor < 9)) {
+      Object.defineProperty(tg, 'CloudStorage', {
+        value: null,
+        writable: false,
+        configurable: true,
+        enumerable: true
+      });
     }
+
+    // HapticFeedback (needs 6.1+)
+    if (major < 6 || (major === 6 && minor < 1)) {
+      Object.defineProperty(tg, 'HapticFeedback', {
+        value: {
+          impactOccurred: () => {},
+          notificationOccurred: () => {},
+          selectionChanged: () => {}
+        },
+        writable: false,
+        configurable: true,
+        enumerable: true
+      });
+    }
+  } catch {
+    // Silently fail
   }
 })();
+
+export {};
