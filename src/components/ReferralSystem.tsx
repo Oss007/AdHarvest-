@@ -18,7 +18,17 @@ export const ReferralSystem: React.FC<ReferralSystemProps> = ({ userId, referral
     navigator.clipboard.writeText(refLink);
     setCopied(true);
     try {
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        const isAtLeast = (ver: string) => {
+          if (typeof tg.isVersionAtLeast === 'function') return tg.isVersionAtLeast(ver);
+          const v = parseFloat(tg.version || '0');
+          return v >= parseFloat(ver);
+        };
+        if (isAtLeast('6.1')) {
+          tg.HapticFeedback?.notificationOccurred('success');
+        }
+      }
     } catch (e) {}
     setTimeout(() => setCopied(false), 2000);
   };

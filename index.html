@@ -12,16 +12,13 @@
        * This script suppresses legacy warnings and provides basic safety.
        */
       (function() {
-        // 1. Console Interception
+        // 1. Console Interception (Immediate & Aggressive)
         var suppressPatterns = [
-          /CloudStorage is not supported/i,
-          /HapticFeedback is not supported/i,
-          /\[Telegram\.WebApp\] CloudStorage/i,
-          /\[Telegram\.WebApp\] HapticFeedback/i,
-          /version 6\.[0-8]/i,
-          /version 6\.0/i,
-          /not supported in version/i,
-          /\[Telegram\.WebApp\]/i
+          /CloudStorage/i,
+          /HapticFeedback/i,
+          /Telegram\.WebApp/i,
+          /version 6\./i,
+          /not supported/i
         ];
         
         var methods = ['log', 'warn', 'error', 'info', 'debug'];
@@ -31,29 +28,115 @@
           if (typeof original !== 'function') return;
           
           console[method] = function() {
-            var args = Array.prototype.slice.call(arguments);
             var combined = "";
-            try {
-              combined = args.map(function(a) {
-                if (typeof a === 'string') return a;
-                try { return JSON.stringify(a); } catch(e) { return String(a); }
-              }).join(' ');
-            } catch(e) {
-              combined = args.join(' ');
+            for (var i = 0; i < arguments.length; i++) {
+              try {
+                var arg = arguments[i];
+                if (arg === null || arg === undefined) combined += String(arg) + " ";
+                else if (typeof arg === 'string') combined += arg + " ";
+                else if (arg instanceof Error) combined += arg.message + " " + (arg.stack || "") + " ";
+                else {
+                  try {
+                    combined += String(arg) + " " + JSON.stringify(arg) + " ";
+                  } catch(e) {
+                    combined += String(arg) + " ";
+                  }
+                }
+              } catch(e) {}
             }
             
             for (var i = 0; i < suppressPatterns.length; i++) {
               if (suppressPatterns[i].test(combined)) return;
             }
             
-            original.apply(console, arguments);
+            return original.apply(console, arguments);
           };
         });
 
-        // 2. Basic Telegram Mock (if not loaded yet)
-        if (!window.Telegram) {
-          window.Telegram = {};
+        // 2. Robust Shadowing Function
+        function applyShadows(tg) {
+          if (!tg) return;
+          
+          var v = parseFloat(tg.version || '0');
+          var isAtLeast = function(ver) {
+            if (typeof tg.isVersionAtLeast === 'function') return tg.isVersionAtLeast(ver);
+            return v >= parseFloat(ver);
+          };
+
+          // Shadow CloudStorage if < 6.9
+          if (!isAtLeast('6.9')) {
+            var mockCloudStorage = {
+              setItem: function(key, value, cb) {
+                localStorage.setItem(key, value);
+                if (cb) cb(null, true);
+              },
+              getItem: function(key, cb) {
+                var val = localStorage.getItem(key);
+                if (cb) cb(null, val);
+              },
+              getItems: function(keys, cb) {
+                var vals = keys.map(function(k) { return localStorage.getItem(k); });
+                if (cb) cb(null, vals);
+              },
+              removeItem: function(key, cb) {
+                localStorage.removeItem(key);
+                if (cb) cb(null, true);
+              },
+              removeItems: function(keys, cb) {
+                keys.forEach(function(k) { localStorage.removeItem(k); });
+                if (cb) cb(null, true);
+              },
+              getKeys: function(cb) {
+                var keys = [];
+                for (var i = 0; i < localStorage.length; i++) {
+                  keys.push(localStorage.key(i));
+                }
+                if (cb) cb(null, keys);
+              }
+            };
+            try {
+              Object.defineProperty(tg, 'CloudStorage', {
+                get: function() { return mockCloudStorage; },
+                set: function() {},
+                configurable: true,
+                enumerable: true
+              });
+            } catch(e) {}
+          }
+
+          // Shadow HapticFeedback if < 6.1
+          if (!isAtLeast('6.1')) {
+            var dummyHaptic = {
+              impactOccurred: function() {},
+              notificationOccurred: function() {},
+              selectionChanged: function() {}
+            };
+            try {
+              Object.defineProperty(tg, 'HapticFeedback', {
+                get: function() { return dummyHaptic; },
+                set: function() {},
+                configurable: true,
+                enumerable: true
+              });
+            } catch(e) {}
+          }
         }
+
+        // 3. Intercept window.Telegram assignment
+        var _telegram = window.Telegram;
+        Object.defineProperty(window, 'Telegram', {
+          get: function() { return _telegram; },
+          set: function(v) {
+            _telegram = v;
+            if (_telegram && _telegram.WebApp) {
+              applyShadows(_telegram.WebApp);
+            }
+          },
+          configurable: true
+        });
+
+        // 4. Initial Mock & Polling (Fallback)
+        if (!window.Telegram) window.Telegram = {};
         if (!window.Telegram.WebApp) {
           window.Telegram.WebApp = {
             ready: function() {},
@@ -66,9 +149,20 @@
             },
             initDataUnsafe: { user: {} },
             colorScheme: 'light',
-            version: '6.0'
+            version: '6.0',
+            isVersionAtLeast: function() { return false; }
           };
+        } else {
+          applyShadows(window.Telegram.WebApp);
         }
+
+        var count = 0;
+        var interval = setInterval(function() {
+          if (window.Telegram && window.Telegram.WebApp) {
+            applyShadows(window.Telegram.WebApp);
+          }
+          if (++count > 50) clearInterval(interval);
+        }, 50);
       })();
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>

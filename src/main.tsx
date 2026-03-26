@@ -21,7 +21,15 @@ if (tg) {
 
   // Haptic feedback on init
   try {
-    tg.HapticFeedback?.impactOccurred('medium');
+    const isAtLeast = (ver: string) => {
+      if (typeof tg.isVersionAtLeast === 'function') return tg.isVersionAtLeast(ver);
+      const v = parseFloat(tg.version || '0');
+      return v >= parseFloat(ver);
+    };
+
+    if (isAtLeast('6.1')) {
+      tg.HapticFeedback?.impactOccurred('medium');
+    }
   } catch (e) {
     // Silently fail
   }
