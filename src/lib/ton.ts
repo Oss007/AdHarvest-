@@ -1,26 +1,25 @@
 import { TonConnectUI } from '@tonconnect/ui-react';
 import { Address, beginCell, toNano } from '@ton/core';
 
-const JETTON_WALLET_ADDRESS = "YOUR-JETTON-WALLET"; // Placeholder
+// Placeholder for Jetton Wallet Address
+const JETTON_WALLET_ADDRESS = import.meta.env.VITE_JETTON_WALLET || "YOUR-JETTON-WALLET";
 
-export async function rewardUser(tonConnectUI: TonConnectUI, userAddress: string | null) {
-  if (!userAddress) {
-    console.log("No wallet connected, simulating reward in dev mode...");
+export const rewardUser = async (tonConnectUI: TonConnectUI, userAddress: string) => {
+  if (!tonConnectUI.connected) {
+    console.log("Wallet not connected, simulating success in dev mode...");
     return new Promise((resolve) => setTimeout(resolve, 1500));
   }
 
   try {
-    // This is a placeholder for actual mint/burn logic via TON transaction
-    // In a real app, this would call a backend or trigger a contract interaction
     const transaction = {
       validUntil: Math.floor(Date.now() / 1000) + 60, // 60 seconds from now
       messages: [
         {
           address: JETTON_WALLET_ADDRESS,
-          amount: toNano("0.05").toString(), // Small fee for transaction
+          amount: toNano("0.05").toString(), // Small amount for gas
           payload: beginCell()
-            .storeUint(0, 32) // opcode for comment
-            .storeStringTail("AdHarvest Reward: Mint 10 ADH, Burn 2 ADH")
+            .storeUint(0, 32) // OpCode for mint/burn simulation
+            .storeStringTail(`Mint 10 ADH to ${userAddress}, Burn 2 ADH`)
             .endCell()
             .toBoc()
             .toString("base64"),
@@ -29,9 +28,10 @@ export async function rewardUser(tonConnectUI: TonConnectUI, userAddress: string
     };
 
     const result = await tonConnectUI.sendTransaction(transaction);
-    return result;
+    console.log("Transaction sent:", result);
+    return true;
   } catch (error) {
-    console.error("TON Transaction failed:", error);
+    console.error("Transaction failed:", error);
     throw error;
   }
-}
+};

@@ -1,18 +1,15 @@
-export function handleReferral(referrals: string[], setReferrals: (refs: string[]) => void) {
-  const urlParams = new URLSearchParams(window.location.search);
-  const startParam = urlParams.get('tgWebAppStartParam') || window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+export const handleReferral = (
+  startParam: string | undefined,
+  referrals: string[],
+  setReferrals: (refs: string[]) => void
+) => {
+  if (!startParam || !startParam.startsWith('ref_')) return;
 
-  if (startParam && startParam.startsWith('ref_')) {
-    const referrerId = startParam.replace('ref_', '');
-    if (!referrals.includes(referrerId)) {
-      const newReferrals = [...referrals, referrerId];
-      setReferrals(newReferrals);
-      return true;
-    }
+  const referrerId = startParam.replace('ref_', '');
+  
+  if (referrerId && !referrals.includes(referrerId)) {
+    const newReferrals = [...referrals, referrerId];
+    setReferrals(newReferrals);
+    console.log(`New referral added: ${referrerId}`);
   }
-  return false;
-}
-
-export function generateReferralLink(userId: string) {
-  return `https://t.me/AdHarvestBot/app?startapp=ref_${userId}`;
-}
+};

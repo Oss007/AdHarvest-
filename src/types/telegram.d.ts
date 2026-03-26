@@ -114,7 +114,7 @@ declare global {
         isVersionAtLeast: (version: string) => boolean;
       };
     };
-    show_10780044: (params: { type: 'rewarded' | 'interstitial' }) => void;
+    show_10780044: (params?: any) => any;
   }
 }
 

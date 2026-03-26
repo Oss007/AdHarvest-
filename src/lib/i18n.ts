@@ -4,56 +4,64 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
   en: {
     translation: {
-      watch_ad: "Watch Ad to Water",
-      watching_ad: "Watching Ad...",
-      harvest_adh: "HARVEST ADH",
-      no_ads_left: "No more ads today or SDK not loaded",
-      ads_left: "Ads left: {{count}}",
-      total_earned: "Total Earned",
-      burns_contributed: "Burns Contributed",
-      invites: "Invites",
-      extra_ads: "Extra Ads",
-      share_link: "Share Link",
-      copy_link: "Copy Link",
-      copied: "Copied!",
-      friends_invited: "Friends Invited",
-      invite_friends: "Invite Friends",
-      leaderboard: "Leaderboard",
-      farm_level: "Farm Level",
-      levels: {
-        novice: "Novice Farmer",
-        green: "Green Thumb",
-        master: "Master Harvester",
-        tycoon: "ADH Tycoon"
-      },
-      ad_error: "Watch full ad to earn ADH!"
+      "app_name": "AdHarvest",
+      "farm": "Farm",
+      "profile": "Profile",
+      "referrals": "Referrals",
+      "harvest_adh": "HARVEST ADH",
+      "ads_left": "Ads remaining: {{count}}",
+      "no_ads": "No more ads today or SDK not loaded",
+      "watch_ad": "Watch Ad to Water",
+      "barren": "Barren Soil",
+      "watered": "Watered",
+      "harvested": "Ready to Harvest",
+      "total_earned": "Total Earned",
+      "total_burned": "Total Burned",
+      "invites": "Invites",
+      "extra_ads": "Extra Ads Unlocked",
+      "leaderboard": "Leaderboard",
+      "copy_link": "Copy Referral Link",
+      "share_tg": "Share on Telegram",
+      "referral_list": "Your Referrals",
+      "level_novice": "Novice Farmer",
+      "level_green": "Green Thumb",
+      "level_master": "Master Harvester",
+      "level_tycoon": "ADH Tycoon",
+      "toast_ad_error": "Watch full ad to earn ADH!",
+      "toast_copy_success": "Link copied to clipboard!",
+      "minting": "Minting 10 ADH...",
+      "burning": "Burning 2 ADH..."
     }
   },
   ar: {
     translation: {
-      watch_ad: "شاهد إعلان للري",
-      watching_ad: "جاري مشاهدة الإعلان...",
-      harvest_adh: "حصاد ADH",
-      no_ads_left: "لا يوجد إعلانات اليوم أو لم يتم تحميل SDK",
-      ads_left: "الإعلانات المتبقية: {{count}}",
-      total_earned: "إجمالي الأرباح",
-      burns_contributed: "المساهمة في الحرق",
-      invites: "الدعوات",
-      extra_ads: "إعلانات إضافية",
-      share_link: "مشاركة الرابط",
-      copy_link: "نسخ الرابط",
-      copied: "تم النسخ!",
-      friends_invited: "الأصدقاء المدعوون",
-      invite_friends: "دعوة الأصدقاء",
-      leaderboard: "لوحة المتصدرين",
-      farm_level: "مستوى المزرعة",
-      levels: {
-        novice: "مزارع مبتدئ",
-        green: "إبهام أخضر",
-        master: "خبير حصاد",
-        tycoon: "تايكون ADH"
-      },
-      ad_error: "شاهد الإعلان كاملاً لربح ADH!"
+      "app_name": "حصاد الإعلانات",
+      "farm": "المزرعة",
+      "profile": "الملف الشخصي",
+      "referrals": "الإحالات",
+      "harvest_adh": "احصد ADH",
+      "ads_left": "الإعلانات المتبقية: {{count}}",
+      "no_ads": "لا توجد إعلانات اليوم أو لم يتم تحميل SDK",
+      "watch_ad": "شاهد إعلان للري",
+      "barren": "تربة قاحلة",
+      "watered": "مروية",
+      "harvested": "جاهز للحصاد",
+      "total_earned": "إجمالي المكتسب",
+      "total_burned": "إجمالي المحروق",
+      "invites": "الدعوات",
+      "extra_ads": "إعلانات إضافية مفتوحة",
+      "leaderboard": "لوحة المتصدرين",
+      "copy_link": "نسخ رابط الإحالة",
+      "share_tg": "مشاركة عبر تلغرام",
+      "referral_list": "إحالاتك",
+      "level_novice": "مزارع مبتدئ",
+      "level_green": "إبهام أخضر",
+      "level_master": "خبير الحصاد",
+      "level_tycoon": "تايكون ADH",
+      "toast_ad_error": "شاهد الإعلان كاملاً لكسب ADH!",
+      "toast_copy_success": "تم نسخ الرابط!",
+      "minting": "سك 10 ADH...",
+      "burning": "حرق 2 ADH..."
     }
   }
 };
@@ -62,8 +70,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: "en",
-    fallbackLng: "en",
+    lng: 'en',
+    fallbackLng: 'en',
     interpolation: {
       escapeValue: false
     }

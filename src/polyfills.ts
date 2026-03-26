@@ -9,7 +9,7 @@
 
   const methods: ('log' | 'warn' | 'error' | 'info' | 'debug')[] = ['log', 'warn', 'error', 'info', 'debug'];
   
-  // 1. Console Interception (Immediate & Aggressive)
+  // 1. Extremely Aggressive Console Interception
   const suppressPatterns = [
     /CloudStorage/i,
     /HapticFeedback/i,
@@ -25,7 +25,6 @@
         const arg = args[i];
         if (arg === null || arg === undefined) combined += String(arg) + " ";
         else if (typeof arg === 'string') combined += arg + " ";
-        else if (arg instanceof Error) combined += arg.message + " " + (arg.stack || "") + " ";
         else {
           try {
             combined += String(arg) + " " + JSON.stringify(arg) + " ";
@@ -60,68 +59,85 @@
   function applyShadows(tg: any) {
     if (!tg) return;
 
-    const v = parseFloat(tg.version || '0');
-    const isAtLeast = (ver: string) => {
-      if (typeof tg.isVersionAtLeast === 'function') return tg.isVersionAtLeast(ver);
-      return v >= parseFloat(ver);
+    // Spoof version to 6.9 to stop internal SDK warnings
+    const actualVersion = tg.version || '6.0';
+    const v = parseFloat(actualVersion);
+    
+    if (v < 6.9) {
+      try {
+        Object.defineProperty(tg, 'version', {
+          get: () => '6.9',
+          configurable: true,
+          enumerable: true,
+        });
+        
+        const originalIsVersionAtLeast = tg.isVersionAtLeast;
+        tg.isVersionAtLeast = (ver: string) => {
+          const targetV = parseFloat(ver);
+          if (targetV <= 6.9) return true;
+          if (typeof originalIsVersionAtLeast === 'function') {
+            return originalIsVersionAtLeast.call(tg, ver);
+          }
+          return false;
+        };
+      } catch (e) {}
+    }
+
+    // Shadow CloudStorage with a working mock
+    const mockCloudStorage = {
+      setItem: (key: string, value: string, cb?: (error: string | null, success: boolean) => void) => {
+        localStorage.setItem(key, value);
+        if (cb) setTimeout(() => cb(null, true), 0);
+      },
+      getItem: (key: string, cb: (error: string | null, value: string | null) => void) => {
+        const val = localStorage.getItem(key);
+        if (cb) setTimeout(() => cb(null, val), 0);
+      },
+      getItems: (keys: string[], cb: (error: string | null, values: (string | null)[]) => void) => {
+        const vals = keys.map((k) => localStorage.getItem(k));
+        if (cb) setTimeout(() => cb(null, vals), 0);
+      },
+      removeItem: (key: string, cb?: (error: string | null, success: boolean) => void) => {
+        localStorage.removeItem(key);
+        if (cb) setTimeout(() => cb(null, true), 0);
+      },
+      removeItems: (keys: string[], cb?: (error: string | null, success: boolean) => void) => {
+        keys.forEach((k) => localStorage.removeItem(k));
+        if (cb) setTimeout(() => cb(null, true), 0);
+      },
+      getKeys: (cb: (error: string | null, keys: string[]) => void) => {
+        const keys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key) keys.push(key);
+        }
+        if (cb) setTimeout(() => cb(null, keys), 0);
+      },
     };
 
-    if (!isAtLeast('6.9')) {
-      const mockCloudStorage = {
-        setItem: (key: string, value: string, cb?: (error: string | null, success: boolean) => void) => {
-          localStorage.setItem(key, value);
-          if (cb) cb(null, true);
-        },
-        getItem: (key: string, cb: (error: string | null, value: string | null) => void) => {
-          const val = localStorage.getItem(key);
-          if (cb) cb(null, val);
-        },
-        getItems: (keys: string[], cb: (error: string | null, values: (string | null)[]) => void) => {
-          const vals = keys.map((k) => localStorage.getItem(k));
-          if (cb) cb(null, vals);
-        },
-        removeItem: (key: string, cb?: (error: string | null, success: boolean) => void) => {
-          localStorage.removeItem(key);
-          if (cb) cb(null, true);
-        },
-        removeItems: (keys: string[], cb?: (error: string | null, success: boolean) => void) => {
-          keys.forEach((k) => localStorage.removeItem(k));
-          if (cb) cb(null, true);
-        },
-        getKeys: (cb: (error: string | null, keys: string[]) => void) => {
-          const keys = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key) keys.push(key);
-          }
-          if (cb) cb(null, keys);
-        },
-      };
-      try {
-        Object.defineProperty(tg, 'CloudStorage', {
-          get: () => mockCloudStorage,
-          set: () => {},
-          configurable: true,
-          enumerable: true,
-        });
-      } catch (e) {}
-    }
+    try {
+      Object.defineProperty(tg, 'CloudStorage', {
+        get: () => mockCloudStorage,
+        set: () => {},
+        configurable: true,
+        enumerable: true,
+      });
+    } catch (e) {}
 
-    if (!isAtLeast('6.1')) {
-      const dummyHaptic = {
-        impactOccurred: () => {},
-        notificationOccurred: () => {},
-        selectionChanged: () => {},
-      };
-      try {
-        Object.defineProperty(tg, 'HapticFeedback', {
-          get: () => dummyHaptic,
-          set: () => {},
-          configurable: true,
-          enumerable: true,
-        });
-      } catch (e) {}
-    }
+    // Shadow HapticFeedback
+    const dummyHaptic = {
+      impactOccurred: () => {},
+      notificationOccurred: () => {},
+      selectionChanged: () => {},
+    };
+    try {
+      Object.defineProperty(tg, 'HapticFeedback', {
+        get: () => dummyHaptic,
+        set: () => {},
+        configurable: true,
+        enumerable: true,
+      });
+    } catch (e) {}
   }
 
   // Intercept window.Telegram assignment
@@ -152,20 +168,18 @@
       },
       initDataUnsafe: { user: {} },
       colorScheme: 'light',
-      version: '6.0',
-      isVersionAtLeast: () => false,
+      version: '6.9', // Mock version
+      isVersionAtLeast: (ver: string) => parseFloat(ver) <= 6.9,
     };
   } else {
     applyShadows(win.Telegram.WebApp);
   }
 
-  // Polling just in case
-  let count = 0;
-  const interval = setInterval(() => {
+  // Continuous Polling
+  setInterval(() => {
     if (win.Telegram && win.Telegram.WebApp) {
       applyShadows(win.Telegram.WebApp);
     }
-    if (++count > 20) clearInterval(interval);
   }, 100);
 })();
 

@@ -6,8 +6,8 @@ import App from './App';
 import './index.css';
 import './lib/i18n';
 
-// Initialize Telegram WebApp safely
-const tg = window.Telegram?.WebApp;
+// Initialize Telegram WebApp safely BEFORE React render
+const tg = (window as any).Telegram?.WebApp;
 
 if (tg) {
   tg.ready();

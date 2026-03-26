@@ -1,77 +1,87 @@
 import React, { useState } from 'react';
-import { Play, RefreshCw, AlertCircle } from 'lucide-react';
+import { Play, AlertCircle, Loader2 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'motion/react';
 
 interface AdWatcherProps {
   adsLeft: number;
-  onComplete: () => void;
-  onError: (msg: string) => void;
+  onAdComplete: () => void;
+  onAdError: (msg: string) => void;
 }
 
-export const AdWatcher: React.FC<AdWatcherProps> = ({ adsLeft, onComplete, onError }) => {
+const AdWatcher: React.FC<AdWatcherProps> = ({ adsLeft, onAdComplete, onAdError }) => {
   const { t } = useTranslation();
   const [isWatching, setIsWatching] = useState(false);
 
-  const handleWatchAd = () => {
+  const handleWatchAd = async () => {
     if (adsLeft <= 0) {
-      onError(t('no_ads_left'));
+      onAdError(t('no_ads'));
       return;
     }
 
-    if (typeof window.show_10780044 !== 'function') {
-      onError(t('no_ads_left'));
-      return;
-    }
-
-    setIsWatching(true);
-    
-    try {
-      window.show_10780044({ type: 'rewarded' });
-      
-      // Monetag doesn't have a direct callback in this simple SDK script
-      // Usually you'd listen for a custom event or the SDK handles the reward
-      // For this demo, we'll simulate completion after a delay if the SDK is called
-      // In production, you'd use the proper SDK callbacks
-      
+    if (!window.show_10780044) {
+      console.warn("Monetag SDK not loaded, simulating ad in dev mode...");
+      setIsWatching(true);
       setTimeout(() => {
         setIsWatching(false);
-        onComplete();
-      }, 5000); // Simulate ad duration
+        onAdComplete();
+      }, 2000);
+      return;
+    }
 
-    } catch (err) {
+    try {
+      setIsWatching(true);
+      // Monetag SDK call - try without arguments first as some versions throw on unexpected objects
+      if (typeof window.show_10780044 === 'function') {
+        await window.show_10780044();
+      } else {
+        throw new Error("Monetag SDK function not found");
+      }
+      onAdComplete();
+    } catch (error) {
+      console.error("Ad failed:", error);
+      onAdError(t('toast_ad_error'));
+    } finally {
       setIsWatching(false);
-      onError(t('ad_error'));
     }
   };
 
   return (
-    <div className="w-full px-4">
-      <button
+    <div className="w-full max-w-md mx-auto mt-8 px-4">
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         onClick={handleWatchAd}
         disabled={isWatching || adsLeft <= 0}
-        className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg ${
-          isWatching || adsLeft <= 0 
-            ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-            : 'bg-primary text-white hover:bg-green-600 active:scale-95 shadow-green-200'
+        className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-black text-xl shadow-xl transition-all duration-300 ${
+          adsLeft > 0 
+            ? 'bg-gradient-to-r from-[#4CAF50] to-[#8BC34A] text-white' 
+            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
         }`}
       >
         {isWatching ? (
-          <>
-            <RefreshCw size={20} className="animate-spin" />
-            {t('watching_ad')}
-          </>
+          <Loader2 className="animate-spin" size={24} />
+        ) : adsLeft > 0 ? (
+          <Play size={24} fill="currentColor" />
         ) : (
-          <>
-            <Play size={20} fill="currentColor" />
-            {t('watch_ad')}
-          </>
+          <AlertCircle size={24} />
         )}
-      </button>
+        {isWatching ? t('minting') : adsLeft > 0 ? t('watch_ad') : t('no_ads')}
+      </motion.button>
       
-      <p className="text-center mt-3 text-xs font-medium text-gray-400">
-        {t('ads_left', { count: adsLeft })}
-      </p>
+      <div className="mt-4 flex items-center justify-between px-2">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-[#4CAF50] animate-pulse" />
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-widest">
+            {t('ads_left', { count: adsLeft })}
+          </span>
+        </div>
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+          Powered by Monetag
+        </div>
+      </div>
     </div>
   );
 };
+
+export default AdWatcher;

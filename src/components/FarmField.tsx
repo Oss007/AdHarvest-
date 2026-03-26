@@ -1,25 +1,17 @@
 import React from 'react';
+import { Package, Droplets, Sprout, Coins } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Droplets, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export type CropState = 'barren' | 'watered' | 'harvested';
 
 interface FarmFieldProps {
-  cells: CropState[];
-  onCellClick: (index: number) => void;
+  cropState: CropState;
   onHarvest: () => void;
-  isHarvestReady: boolean;
   adsLeft: number;
 }
 
-export const FarmField: React.FC<FarmFieldProps> = ({ 
-  cells, 
-  onCellClick, 
-  onHarvest, 
-  isHarvestReady,
-  adsLeft 
-}) => {
+const FarmField: React.FC<FarmFieldProps> = ({ cropState, onHarvest, adsLeft }) => {
   const { t } = useTranslation();
 
   const getEmoji = (state: CropState) => {
@@ -30,62 +22,83 @@ export const FarmField: React.FC<FarmFieldProps> = ({
     }
   };
 
+  const getStatusText = (state: CropState) => {
+    switch (state) {
+      case 'barren': return t('barren');
+      case 'watered': return t('watered');
+      case 'harvested': return t('harvested');
+    }
+  };
+
   return (
-    <div className="relative w-full max-w-sm mx-auto">
-      <div className="farm-grid">
-        {cells.map((state, index) => (
+    <div className="relative w-full max-w-md mx-auto p-4 bg-gradient-to-br from-[#4CAF50]/10 to-[#8BC34A]/10 rounded-3xl shadow-2xl border border-[#4CAF50]/20">
+      <div className="grid grid-cols-3 gap-3 aspect-square">
+        {Array.from({ length: 9 }).map((_, i) => (
           <motion.div
-            key={index}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`crop-cell ${state}`}
-            onClick={() => onCellClick(index)}
+            key={i}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: i * 0.05 }}
+            className={`flex items-center justify-center text-4xl rounded-2xl shadow-inner transition-colors duration-500 ${
+              cropState === 'barren' ? 'bg-[#795548]/20' : 
+              cropState === 'watered' ? 'bg-[#2196F3]/10' : 
+              'bg-[#FFEB3B]/20'
+            }`}
           >
-            <span className="select-none">{getEmoji(state)}</span>
+            <motion.span
+              animate={cropState === 'harvested' ? {
+                y: [0, -10, 0],
+                rotate: [0, 5, -5, 0]
+              } : {}}
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              {getEmoji(cropState)}
+            </motion.span>
           </motion.div>
         ))}
       </div>
 
+      <div className="mt-6 text-center">
+        <p className="text-lg font-bold text-[#4CAF50] mb-2">{getStatusText(cropState)}</p>
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+          <Droplets size={16} className="text-[#2196F3]" />
+          <span>{t('ads_left', { count: adsLeft })}</span>
+        </div>
+      </div>
+
       <AnimatePresence>
-        {isHarvestReady && (
+        {cropState === 'harvested' && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/80 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center p-8 z-50"
           >
-            <motion.div 
-              className="bg-white rounded-3xl p-8 w-full max-w-xs text-center shadow-2xl space-y-6"
-              initial={{ y: 20 }}
-              animate={{ y: 0 }}
+            <motion.div
+              initial={{ scale: 0.5, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white rounded-full p-6 mb-6 shadow-[0_0_30px_rgba(255,235,59,0.5)]"
             >
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600">
-                <Package size={40} />
-              </div>
-              
-              <div className="space-y-2">
-                <h2 className="text-2xl font-black text-gray-900">{t('harvest_adh')}</h2>
-                <p className="text-gray-500 text-sm">{t('ads_left', { count: adsLeft })}</p>
-              </div>
-
-              <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                <motion.div 
-                  className="bg-green-500 h-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(adsLeft / 15) * 100}%` }}
-                />
-              </div>
-
-              <button
-                onClick={onHarvest}
-                className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-2xl shadow-lg shadow-green-200 transition-all active:scale-95"
-              >
-                {t('harvest_adh')}
-              </button>
+              <Package size={64} className="text-[#FFEB3B]" />
             </motion.div>
+            
+            <h2 className="text-2xl font-black text-white mb-2">{t('harvested')}!</h2>
+            <p className="text-white/70 mb-8 text-center">10 ADH minted, 2 ADH burned</p>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onHarvest}
+              className="w-full py-4 bg-[#FFEB3B] text-[#795548] font-black rounded-2xl shadow-xl flex items-center justify-center gap-2"
+            >
+              <Coins size={24} />
+              {t('harvest_adh')}
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
   );
 };
+
+export default FarmField;
