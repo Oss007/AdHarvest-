@@ -13,13 +13,11 @@
     "@ton/core": "^0.59.1",
     "@ton/ton": "^14.0.0",
     "@tonconnect/ui-react": "^2.0.9",
-    "buffer": "^6.0.3",
     "canvas-confetti": "^1.9.3",
     "clsx": "^2.1.1",
     "i18next": "^23.11.5",
     "lucide-react": "^0.400.0",
     "motion": "^12.0.0",
-    "process": "^0.11.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^14.1.2",
@@ -35,7 +33,6 @@
     "postcss": "^8.4.38",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.5.2",
-    "vite": "^6.0.0",
-    "vite-plugin-node-polyfills": "^0.25.0"
+    "vite": "^6.0.0"
   }
 }
