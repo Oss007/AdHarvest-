@@ -13,7 +13,8 @@ const ReferralSystem: React.FC<ReferralSystemProps> = ({ userId, referrals, onCo
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
-  const referralLink = `https://t.me/AdHarvestBot/app?startapp=ref_${userId}`;
+  const botUsername = import.meta.env.VITE_BOT_USERNAME || "AdHarvestBot";
+  const referralLink = `https://t.me/${botUsername}/app?startapp=ref_${userId}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
