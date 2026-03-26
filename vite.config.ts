@@ -2,16 +2,12 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
   plugins: [
-    react(), 
+    react(),
     tailwindcss(),
-    nodePolyfills({
-      // Whether to polyfill `node:` protocol imports.
-      protocolImports: true,
-    }),
+    // ✅ REMOVED: nodePolyfills (causes 404s and build failures on Vercel)
   ],
   resolve: {
     alias: {
@@ -34,4 +30,6 @@ export default defineConfig({
     host: '0.0.0.0',
     hmr: process.env.DISABLE_HMR !== 'true',
   },
+  // ✅ Ensure base is root
+  base: '/',
 });
